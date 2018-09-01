@@ -1,0 +1,45 @@
+{
+  "name": "ribhdux",
+  "version": "0.1.0",
+  "description": "redux extension",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha --timeout 10000 -r ts-node/register src/**/*.spec.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ribhnux/ribhdux.git"
+  },
+  "keywords": [
+    "state",
+    "management",
+    "redux",
+    "react"
+  ],
+  "author": "Ribhararnus Pracutiar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ribhnux/ribhdux/issues"
+  },
+  "homepage": "https://github.com/Ribhnux/ribhdux#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.5",
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "react-dom": "^16.4.2",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.1"
+  },
+  "peerDependencies": {
+    "react": "^16.4.2",
+    "react-redux": "^5.0.7",
+    "redux": "^4.0.0"
+  },
+  "dependencies": {
+    "@types/react": "^16.4.11",
+    "@types/react-redux": "^6.0.6",
+    "sha.js": "^2.4.11"
+  }
+}
