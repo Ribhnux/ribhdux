@@ -1,5 +1,5 @@
 // import * as Ribhdux from "../";
-import Counter from "../examples/Simple/Counter";
+import Counter from "../examples/simple/Counter";
 import { expect } from "chai";
 import "mocha";
 

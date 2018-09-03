@@ -1,15 +1,13 @@
 // import * as React from "react";
 import Ribhdux from "../..";
-import { actionDispatcher, asyncActionDispatcher } from "../../decorators";
+import { actionDispatcher } from "../../decorators";
 
-const logger = store => next => action => {
-  console.log("dispatching", action);
-  let result = next(action);
-  console.log("next state", store.getState());
-  return result;
-};
+export interface CounterState {
+  amount: number;
+  misc: string;
+}
 
-class Counter extends Ribhdux {
+class Counter extends Ribhdux<CounterState> {
   public amount: number = 10;
   public misc: string = "misc data";
 
@@ -19,30 +17,30 @@ class Counter extends Ribhdux {
     super.createActionsFrom(this);
   }
 
-  @actionDispatcher
+  @actionDispatcher()
   increment(amount: number) {
     this.amount = this.amount + amount;
     this.misc = "increment success";
   }
 
-  @actionDispatcher
+  @actionDispatcher()
   decrement(amount: number) {
     this.amount = this.amount - amount;
   }
 
-  @asyncActionDispatcher
+  @actionDispatcher(true)
   async delayIncrement(amount: number) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     this.amount = this.amount + amount;
   }
 
-  @actionDispatcher
+  @actionDispatcher()
   squareOk() {
     this.amount = this.amount ** 2;
   }
 
-  @actionDispatcher
+  @actionDispatcher()
   multiplyThenAdd() {
     this.amount *= this.amount;
     this.amount += this.amount;
