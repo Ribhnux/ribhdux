@@ -1,45 +1,33 @@
 import * as React from "react";
-import {
-  createStore,
-  Store,
-  applyMiddleware,
-  StoreEnhancer,
-  AnyAction,
-  Middleware
-} from "redux";
-import { getFunctionHash } from "./util";
-import { Provider } from "react-redux";
+import { createStore, Store, applyMiddleware, Middleware } from "redux";
+import { createSelector, OutputSelector } from "reselect";
+// import { getFunctionHash } from "./util";
+// import { Provider } from "react-redux";
 
 interface Action {
   type: string;
   payload?: any;
 }
 
-const rerer = store => next => action => {
-  console.log("dispatching", action);
-  let result = next(action);
-  console.log("next state", store.getState());
-  return result;
-};
-
 enum RibhduxStateMachine {
   IDLE,
   PROCESSING
 }
 
-class Ribhdux {
+class Ribhdux<T> {
   // private feature: any;
   // private actions: Action[] = [];
   // private actionHash: any = {};
   private temp: any = {};
   private middleware: Middleware<any, any, any>[] = [];
-  private store: Store | undefined = undefined;
+  private store: Store;
   private currentAction: string = "";
   private internalState: RibhduxStateMachine = RibhduxStateMachine.IDLE;
-  private initialState: any;
   private ribhduxKeys: string[] = [];
-  public prevState: any = {};
-  public nextState: any = {};
+  private selectors: any = {};
+  private initialState: T;
+  private prevState: T = {} as T;
+  private nextState: T = {} as T;
 
   protected payloadDraft: any = {};
   constructor(initialState: any) {
@@ -53,9 +41,9 @@ class Ribhdux {
     return next => action => next(action);
   }
 
-  get state(): any {
+  get state(): T {
     if (this.store) return this.store.getState();
-    return {};
+    return {} as T;
   }
 
   public startDispatch(name: string) {
@@ -77,7 +65,7 @@ class Ribhdux {
 
       this.store.dispatch(action);
       this.resetActionAndPayload();
-      this.initialState = RibhduxStateMachine.IDLE;
+      this.internalState = RibhduxStateMachine.IDLE;
     }
   }
 
@@ -103,18 +91,13 @@ class Ribhdux {
 
   private redefineProperty(keyName: string) {
     const getter = keyName => () => {
-      // console.log("temp", this.temp);
+      const isProcessing =
+        this.internalState === RibhduxStateMachine.PROCESSING;
 
-      // return this.state[keyName];
-      return this.internalState === RibhduxStateMachine.PROCESSING
-        ? this.temp[keyName]
-        : this.state[keyName];
+      return isProcessing ? this.temp[keyName] : this.state[keyName];
     };
 
     const setter = keyName => val => {
-      // if (this.currentAction !== "") {
-      //   this.temp[keyName] = val;
-      // }
       this.resetPayloadDraft();
       this.temp[keyName] = val;
       this.payloadDraft[keyName] = val;
@@ -128,17 +111,21 @@ class Ribhdux {
     Object.defineProperty(this, keyName, definePropertyProps);
   }
 
-  protected createActionsFrom(store: any) {
-    Object.keys(store)
-      .filter(this.filterByRibhduxKeys.bind(this))
-      .forEach(keyName => this.redefineProperty(keyName));
-
+  private initializeStore() {
     this.use(this.recordMiddleware.bind(this));
     this.store = createStore(
       this.reducer,
       this.initialState,
       applyMiddleware(...this.middleware)
     );
+  }
+
+  protected createActionsFrom(store: any) {
+    Object.keys(store)
+      .filter(this.filterByRibhduxKeys.bind(this))
+      .forEach(this.redefineProperty.bind(this));
+
+    this.initializeStore();
   }
 
   private reducer(state: any, action: any): any {
@@ -151,6 +138,58 @@ class Ribhdux {
   }
 
   // Reselect Extension
+  protected createSelectorFromMethod(
+    selectorName: string,
+    justSelector: boolean,
+    resultFn: any[],
+    ...inputSelectorsName: string[]
+  ): any {
+    const prototypes = Object.getPrototypeOf(this);
+    const keysOfPrototypes = Object.keys(prototypes);
+
+    const validPropertiesOrMethod = inputSelectorsName
+      .filter(name => {
+        const isInState = typeof this.state[name] !== "undefined";
+        const isInPrototypes = keysOfPrototypes.includes(name);
+        const isNotConstructor = name !== "constructor";
+
+        const filterCriteria =
+          (isInState || isInPrototypes) && isNotConstructor;
+        return filterCriteria;
+      })
+      .map(name => {
+        const isInState = typeof this.state[name] !== "undefined";
+        const isInPrototypes = keysOfPrototypes.includes(name);
+
+        let type: string | null = null;
+        type = isInState ? "state" : "method";
+        type = isInPrototypes ? "method" : type;
+
+        return { type, name };
+      });
+
+    const createInputSelectors = validPropertiesOrMethod.map(candidate => {
+      if (candidate.type === "method") {
+        this["callFrom"] = "createSelectorFromMethod";
+        return this[candidate.name].apply(this);
+      }
+      return state => state[candidate.name];
+    });
+
+    const createSelectorArgs = [...createInputSelectors, resultFn];
+    const realSelector = this.selectors[selectorName]
+      ? this.selectors[selectorName]
+      : createSelector.apply(this, createSelectorArgs);
+
+    // console.log(justSelector, createInputSelectors);
+
+    if (justSelector) return realSelector;
+    return realSelector(this.state);
+  }
+
+  // protected applySelector(selector) {
+
+  // }
 
   // redux extensions goes here
   use(...middleware: Middleware<any, any, any>[]) {
@@ -170,3 +209,4 @@ class Ribhdux {
 }
 
 export default Ribhdux;
+export * from "./decorators";
